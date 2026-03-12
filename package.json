@@ -1,0 +1,14 @@
+{
+  "name": "shadocs-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev"
+  },
+  "devDependencies": {
+    "turbo": "^2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["esbuild", "sharp"]
+  }
+}

@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #ffffff;
+  --color-foreground: #0a0a0a;
+  --color-muted: #f5f5f5;
+  --color-muted-foreground: #737373;
+  --color-border: #e5e5e5;
+  --color-primary: #171717;
+  --color-primary-foreground: #fafafa;
+  --color-accent: #f5f5f5;
+  --color-accent-foreground: #171717;
+  --color-card: #ffffff;
+  --color-card-foreground: #0a0a0a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #09090b;
+    --color-foreground: #fafafa;
+    --color-muted: #18181b;
+    --color-muted-foreground: #a1a1aa;
+    --color-border: #27272a;
+    --color-primary: #fafafa;
+    --color-primary-foreground: #09090b;
+    --color-accent: #18181b;
+    --color-accent-foreground: #fafafa;
+    --color-card: #09090b;
+    --color-card-foreground: #fafafa;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* Shiki dual theme support */
+.shiki,
+.shiki span {
+  color: var(--shiki-light) !important;
+  background-color: var(--shiki-light-bg) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+
+pre {
+  overflow-x: auto;
+  padding: 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+
+pre code {
+  display: block;
+  min-width: fit-content;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
