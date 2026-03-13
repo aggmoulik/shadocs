@@ -105,10 +105,10 @@ export function ThemeEditor() {
         </svg>
       </button>
 
-      {/* Backdrop */}
+      {/* Backdrop — transparent, no blur so background stays visible */}
       {open && (
         <div
-          className="fixed inset-0 z-[100] bg-black/20 backdrop-blur-sm"
+          className="fixed inset-0 z-[100]"
           onClick={() => setOpen(false)}
         />
       )}

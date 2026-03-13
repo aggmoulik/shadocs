@@ -133,11 +133,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyTokensToDOM(tokens, state.radius)
   }, [state, isDark])
 
-  // Apply typography to DOM
+  // Apply typography to DOM — set on both html and body since
+  // globals.css body has its own font-family that overrides inheritance
   useEffect(() => {
     const root = document.documentElement
+    const body = document.body
     root.style.setProperty('font-family', state.fontFamily)
     root.style.setProperty('font-size', state.fontSize)
+    body.style.setProperty('font-family', state.fontFamily)
+    body.style.setProperty('font-size', state.fontSize)
   }, [state.fontFamily, state.fontSize])
 
   // Persist to localStorage
@@ -195,6 +199,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     clearDOMTokens(defaultPreset.light, defaultRadius)
     document.documentElement.style.removeProperty('font-family')
     document.documentElement.style.removeProperty('font-size')
+    document.body.style.removeProperty('font-family')
+    document.body.style.removeProperty('font-size')
     document.documentElement.classList.remove('dark')
     localStorage.removeItem(STORAGE_KEY)
   }, [])
