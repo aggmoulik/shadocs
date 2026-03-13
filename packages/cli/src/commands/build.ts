@@ -6,6 +6,7 @@ import { execSync } from 'node:child_process'
 import ora from 'ora'
 import { log } from '../utils/logger.js'
 import type { ResolvedRegistryData } from './init.js'
+import { writeComponentFiles, writeExampleManifest, collectNpmDependencies } from '../generator/component-writer.js'
 
 export async function build(options: { cwd?: string } = {}) {
   const cwd = options.cwd || process.cwd()
@@ -27,12 +28,10 @@ export async function build(options: { cwd?: string } = {}) {
 
   // 3. Copy template
   const templateSpinner = ora('Copying site template...').start()
-  // Template is in the sibling package. In dev: ../../template, in dist: varies
-  // Try multiple locations
   const possibleTemplatePaths = [
-    resolve(dirname(fileURLToPath(import.meta.url)), '../../template'),        // from dist/
-    resolve(dirname(fileURLToPath(import.meta.url)), '../../../template'),      // from dist/src/
-    resolve(dirname(fileURLToPath(import.meta.url)), '../../packages/template'), // from monorepo root
+    resolve(dirname(fileURLToPath(import.meta.url)), '../../template'),
+    resolve(dirname(fileURLToPath(import.meta.url)), '../../../template'),
+    resolve(dirname(fileURLToPath(import.meta.url)), '../../packages/template'),
   ]
   const templateDir = possibleTemplatePaths.find((p) => existsSync(p)) || possibleTemplatePaths[0]
 
@@ -42,7 +41,18 @@ export async function build(options: { cwd?: string } = {}) {
   }
 
   const siteDir = resolve(buildDir, 'site')
-  await cp(templateDir, siteDir, { recursive: true })
+  // Clean previous site dir to avoid stale files and symlink copy issues
+  const { rm } = await import('node:fs/promises')
+  if (existsSync(siteDir)) {
+    await rm(siteDir, { recursive: true, force: true })
+  }
+  await cp(templateDir, siteDir, {
+    recursive: true,
+    filter: (src) => {
+      const rel = src.slice(templateDir.length)
+      return !rel.includes('node_modules') && !rel.includes('.next')
+    },
+  })
   templateSpinner.succeed('Copied site template')
 
   // 4. Inject registry data into template
@@ -52,9 +62,29 @@ export async function build(options: { cwd?: string } = {}) {
   await writeFile(registryDataPath, JSON.stringify(data, null, 2))
   injectSpinner.succeed('Injected registry data')
 
-  // 5. Install dependencies and build
-  const buildSpinner = ora('Building site (this may take a moment)...').start()
+  // 5. Write component source files for live preview
+  const componentSpinner = ora('Writing component files for preview...').start()
+  const shadcnComponents = new Map(Object.entries(data.shadcnDeps || {}))
+  await writeComponentFiles(siteDir, data, shadcnComponents)
+  await writeExampleManifest(siteDir, data)
+  componentSpinner.succeed(`Wrote component files (${shadcnComponents.size} shadcn/ui deps)`)
+
+  // 6. Install dependencies (including registry component deps)
+  const buildSpinner = ora('Installing dependencies & building site...').start()
   try {
+    // Collect additional npm deps from registry items
+    const { dependencies } = collectNpmDependencies(data)
+    // Also collect deps from shadcn/ui components
+    const shadcnNpmDeps = await collectShadcnNpmDeps(shadcnComponents)
+    const allDeps = [...new Set([...dependencies, ...shadcnNpmDeps])]
+
+    if (allDeps.length > 0) {
+      execSync(`pnpm add ${allDeps.join(' ')}`, {
+        cwd: siteDir,
+        stdio: 'pipe',
+      })
+    }
+
     execSync('pnpm install --frozen-lockfile 2>/dev/null || pnpm install', {
       cwd: siteDir,
       stdio: 'pipe',
@@ -66,10 +96,13 @@ export async function build(options: { cwd?: string } = {}) {
     if (e instanceof Error && 'stdout' in e) {
       console.error((e as { stdout: Buffer }).stdout?.toString())
     }
+    if (e instanceof Error && 'stderr' in e) {
+      console.error((e as { stderr: Buffer }).stderr?.toString())
+    }
     process.exit(1)
   }
 
-  // 6. Copy output
+  // 7. Copy output
   const outputDir = resolve(cwd, 'out')
   const nextOutDir = resolve(siteDir, 'out')
   if (existsSync(nextOutDir)) {
@@ -80,4 +113,40 @@ export async function build(options: { cwd?: string } = {}) {
   console.log()
   log.info('Deploy the ./out directory to any static host:')
   log.dim('  Vercel, Netlify, GitHub Pages, Cloudflare Pages, etc.')
+}
+
+/**
+ * Extract npm dependencies from shadcn/ui component source code.
+ * These components import from packages like @radix-ui/*, class-variance-authority, etc.
+ */
+async function collectShadcnNpmDeps(components: Map<string, string>): Promise<string[]> {
+  const deps = new Set<string>()
+
+  for (const [, source] of components) {
+    // Match imports from external packages (not @/ or ./ relative imports)
+    const matches = source.matchAll(
+      /from\s+["']([^"'.@/][^"']*|@[^/"']+\/[^"']+)["']/g
+    )
+    for (const m of matches) {
+      const pkg = m[1]
+      // Skip relative imports and @/ alias imports
+      if (pkg.startsWith('.') || pkg.startsWith('@/')) continue
+      // Get the package name (handle scoped packages)
+      if (pkg.startsWith('@')) {
+        const parts = pkg.split('/')
+        deps.add(`${parts[0]}/${parts[1]}`)
+      } else {
+        deps.add(pkg.split('/')[0])
+      }
+    }
+  }
+
+  // Remove packages already in the template
+  const templateDeps = new Set([
+    'react', 'react-dom', 'next', 'next-themes',
+    'shiki', 'lucide-react', 'clsx', 'tailwind-merge',
+  ])
+  for (const d of templateDeps) deps.delete(d)
+
+  return [...deps]
 }

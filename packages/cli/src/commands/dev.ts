@@ -6,6 +6,7 @@ import { spawn, execSync } from 'node:child_process'
 import ora from 'ora'
 import { log } from '../utils/logger.js'
 import type { ResolvedRegistryData } from './init.js'
+import { writeComponentFiles, writeExampleManifest, collectNpmDependencies } from '../generator/component-writer.js'
 
 export async function dev(options: { cwd?: string; port?: number } = {}) {
   const cwd = options.cwd || process.cwd()
@@ -41,17 +42,47 @@ export async function dev(options: { cwd?: string; port?: number } = {}) {
   }
 
   const siteDir = resolve(buildDir, 'site')
-  await cp(templateDir, siteDir, { recursive: true })
+  // Clean previous site dir to avoid stale files and symlink copy issues
+  const { rm } = await import('node:fs/promises')
+  if (existsSync(siteDir)) {
+    await rm(siteDir, { recursive: true, force: true })
+  }
+  await cp(templateDir, siteDir, {
+    recursive: true,
+    filter: (src) => {
+      // Skip node_modules and .next from previous builds
+      const rel = src.slice(templateDir.length)
+      return !rel.includes('node_modules') && !rel.includes('.next')
+    },
+  })
 
   // 4. Inject registry data
   const registryDataPath = resolve(siteDir, 'src/lib/registry-data.json')
   await mkdir(dirname(registryDataPath), { recursive: true })
   await writeFile(registryDataPath, JSON.stringify(data, null, 2))
-  templateSpinner.succeed('Dev environment ready')
 
-  // 5. Install dependencies
+  // 5. Write component source files for live preview
+  const shadcnComponents = new Map(Object.entries(data.shadcnDeps || {}))
+  await writeComponentFiles(siteDir, data, shadcnComponents)
+  await writeExampleManifest(siteDir, data)
+  templateSpinner.succeed(`Dev environment ready (${shadcnComponents.size} shadcn/ui deps)`)
+
+  // 6. Install dependencies
   const installSpinner = ora('Installing dependencies...').start()
   try {
+    // Collect additional npm deps from registry items
+    const { dependencies } = collectNpmDependencies(data)
+    // Also collect deps from shadcn/ui component source
+    const shadcnNpmDeps = collectShadcnSourceDeps(shadcnComponents)
+    const allDeps = [...new Set([...dependencies, ...shadcnNpmDeps])]
+
+    if (allDeps.length > 0) {
+      execSync(`pnpm add ${allDeps.join(' ')}`, {
+        cwd: siteDir,
+        stdio: 'pipe',
+      })
+    }
+
     execSync('pnpm install --frozen-lockfile 2>/dev/null || pnpm install', {
       cwd: siteDir,
       stdio: 'pipe',
@@ -62,7 +93,7 @@ export async function dev(options: { cwd?: string; port?: number } = {}) {
     process.exit(1)
   }
 
-  // 6. Start Next.js dev server
+  // 7. Start Next.js dev server
   console.log()
   log.info(`Starting dev server on http://localhost:${port}`)
   console.log()
@@ -79,4 +110,35 @@ export async function dev(options: { cwd?: string; port?: number } = {}) {
   // Forward signals
   process.on('SIGINT', () => child.kill('SIGINT'))
   process.on('SIGTERM', () => child.kill('SIGTERM'))
+}
+
+/**
+ * Extract npm dependencies from shadcn/ui component source code.
+ */
+function collectShadcnSourceDeps(components: Map<string, string>): string[] {
+  const deps = new Set<string>()
+
+  for (const [, source] of components) {
+    const matches = source.matchAll(
+      /from\s+["']([^"'.@/][^"']*|@[^/"']+\/[^"']+)["']/g
+    )
+    for (const m of matches) {
+      const pkg = m[1]
+      if (pkg.startsWith('.') || pkg.startsWith('@/')) continue
+      if (pkg.startsWith('@')) {
+        const parts = pkg.split('/')
+        deps.add(`${parts[0]}/${parts[1]}`)
+      } else {
+        deps.add(pkg.split('/')[0])
+      }
+    }
+  }
+
+  const templateDeps = new Set([
+    'react', 'react-dom', 'next', 'next-themes',
+    'shiki', 'lucide-react', 'clsx', 'tailwind-merge',
+  ])
+  for (const d of templateDeps) deps.delete(d)
+
+  return [...deps]
 }

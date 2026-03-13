@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { formatType } from '@/lib/registry'
 
@@ -70,6 +70,7 @@ export function ComponentDetail({
   const [activeFileIndex, setActiveFileIndex] = useState(0)
   const [activeExampleIndex, setActiveExampleIndex] = useState(0)
   const [copied, setCopied] = useState<string | null>(null)
+  const [showCode, setShowCode] = useState(false)
 
   const handleCopy = async (text: string, key: string) => {
     await navigator.clipboard.writeText(text)
@@ -182,18 +183,18 @@ export function ComponentDetail({
 
             {/* Preview Tab */}
             {activeTab === 'preview' && (
-              <div className="flex gap-6">
-                {/* Example sidebar */}
+              <div className="space-y-4">
+                {/* Example selector */}
                 {highlightedExamples.length > 1 && (
-                  <div className="hidden sm:block w-40 shrink-0 space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium px-2 mb-2">
-                      Examples
-                    </p>
+                  <div className="flex gap-1 overflow-x-auto pb-1">
                     {highlightedExamples.map((ex, i) => (
                       <button
                         key={ex.name}
-                        onClick={() => setActiveExampleIndex(i)}
-                        className={`block w-full text-left px-2 py-1.5 rounded-md text-xs transition-colors ${
+                        onClick={() => {
+                          setActiveExampleIndex(i)
+                          setShowCode(false)
+                        }}
+                        className={`whitespace-nowrap text-xs px-2.5 py-1.5 rounded-md transition-colors ${
                           i === activeExampleIndex
                             ? 'bg-accent text-foreground font-medium'
                             : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
@@ -205,42 +206,51 @@ export function ComponentDetail({
                   </div>
                 )}
 
-                {/* Example code */}
-                <div className="flex-1 min-w-0">
-                  {/* Mobile example selector */}
-                  {highlightedExamples.length > 1 && (
-                    <div className="sm:hidden flex gap-1 overflow-x-auto pb-3">
-                      {highlightedExamples.map((ex, i) => (
-                        <button
-                          key={ex.name}
-                          onClick={() => setActiveExampleIndex(i)}
-                          className={`whitespace-nowrap text-xs px-2.5 py-1.5 rounded-md transition-colors ${
-                            i === activeExampleIndex
-                              ? 'bg-accent text-foreground font-medium'
-                              : 'text-muted-foreground hover:bg-accent/50'
-                          }`}
-                        >
-                          {formatExampleName(ex.name)}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {highlightedExamples[activeExampleIndex] && (
-                    <CodeViewer
-                      filename={`${highlightedExamples[activeExampleIndex].name}.tsx`}
-                      html={highlightedExamples[activeExampleIndex].html}
-                      raw={highlightedExamples[activeExampleIndex].raw}
-                      copied={copied === `ex-${activeExampleIndex}`}
-                      onCopy={() =>
-                        handleCopy(
-                          highlightedExamples[activeExampleIndex].raw,
-                          `ex-${activeExampleIndex}`
-                        )
-                      }
+                {/* Live Preview */}
+                {highlightedExamples[activeExampleIndex] && (
+                  <div className="space-y-3">
+                    <ComponentPreview
+                      exampleName={highlightedExamples[activeExampleIndex].name}
                     />
-                  )}
-                </div>
+
+                    {/* Toggle code */}
+                    <div className="flex items-center justify-between">
+                      <button
+                        onClick={() => setShowCode(!showCode)}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        {showCode ? 'Hide Code' : 'View Code'}
+                      </button>
+                      <CopyButton
+                        text={highlightedExamples[activeExampleIndex].raw}
+                        copied={copied === `ex-${activeExampleIndex}`}
+                        onCopy={() =>
+                          handleCopy(
+                            highlightedExamples[activeExampleIndex].raw,
+                            `ex-${activeExampleIndex}`
+                          )
+                        }
+                      />
+                    </div>
+
+                    {/* Code panel */}
+                    {showCode && (
+                      <CodeViewer
+                        filename={`${highlightedExamples[activeExampleIndex].name}.tsx`}
+                        html={highlightedExamples[activeExampleIndex].html}
+                        raw={highlightedExamples[activeExampleIndex].raw}
+                        copied={copied === `ex-code-${activeExampleIndex}`}
+                        onCopy={() =>
+                          handleCopy(
+                            highlightedExamples[activeExampleIndex].raw,
+                            `ex-code-${activeExampleIndex}`
+                          )
+                        }
+                      />
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -372,13 +382,106 @@ export function ComponentDetail({
         {/* Status Bar */}
         <div className="border-t border-border bg-background px-4 py-2 text-xs text-muted-foreground flex items-center justify-between shrink-0">
           <Link href="/" className="hover:text-foreground transition-colors">
-            ← Back to {registryName}
+            &larr; Back to {registryName}
           </Link>
           <span>Generated by shadocs</span>
         </div>
       </div>
     </div>
   )
+}
+
+function ComponentPreview({ exampleName }: { exampleName: string }) {
+  const [error, setError] = useState<string | null>(null)
+  const [Component, setComponent] = useState<React.ComponentType | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    setComponent(null)
+
+    import('@/lib/example-manifest')
+      .then((mod) => {
+        const comp = mod.exampleComponents[exampleName]
+        if (comp) {
+          setComponent(() => comp)
+        } else {
+          setError(`Example "${exampleName}" not found`)
+        }
+        setLoading(false)
+      })
+      .catch(() => {
+        setError('Preview not available')
+        setLoading(false)
+      })
+  }, [exampleName])
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border border-border bg-background p-8">
+        <div className="flex items-center justify-center h-40 text-sm text-muted-foreground animate-pulse">
+          Loading preview...
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !Component) {
+    return (
+      <div className="rounded-lg border border-border bg-muted/20 p-8">
+        <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
+          {error || 'Preview not available'}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-background overflow-hidden">
+      <div className="flex items-center justify-between border-b border-border bg-muted/30 px-3 py-1.5">
+        <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+          Preview
+        </span>
+      </div>
+      <div className="p-6 flex items-center justify-center min-h-[200px]">
+        <ErrorBoundary fallback={<PreviewError />}>
+          <Component />
+        </ErrorBoundary>
+      </div>
+    </div>
+  )
+}
+
+function PreviewError() {
+  return (
+    <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
+      Component failed to render
+    </div>
+  )
+}
+
+import { Component as ReactComponent } from 'react'
+
+class ErrorBoundary extends ReactComponent<
+  { children: React.ReactNode; fallback: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback
+    }
+    return this.props.children
+  }
 }
 
 function CodeViewer({
