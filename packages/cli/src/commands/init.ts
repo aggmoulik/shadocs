@@ -106,6 +106,10 @@ export async function init(source: string, options: { cwd?: string } = {}) {
 
   console.log()
   log.info('Next steps:')
-  log.dim('  shadocs dev    — Start dev server')
-  log.dim('  shadocs build  — Build static site')
+  log.dim('  shadocs docs dev       — Start docs dev server')
+  log.dim('  shadocs docs build     — Build docs static site')
+  if (typeGroups.has('block')) {
+    log.dim('  shadocs landing dev    — Start blocks showcase dev server')
+    log.dim('  shadocs landing build  — Build blocks showcase static site')
+  }
 }

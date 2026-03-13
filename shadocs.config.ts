@@ -2,18 +2,18 @@ import { defineConfig } from 'shadocs'
 
 export default defineConfig({
   "registry": {
-    "source": "https://magicui.design/r/registry.json",
-    "name": "magicui",
-    "homepage": "https://magicui.design"
+    "source": "https://billingsdk.com/r/registry.json",
+    "name": "billingsdk",
+    "homepage": "https://billingsdk.com"
   },
   "site": {
-    "title": "magicui Docs"
+    "title": "billingsdk Docs"
   },
   "nav": {
     "links": [
       {
         "title": "Homepage",
-        "href": "https://magicui.design"
+        "href": "https://billingsdk.com"
       }
     ]
   },

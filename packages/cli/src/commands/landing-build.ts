@@ -5,28 +5,23 @@ import { execSync } from 'node:child_process'
 import ora from 'ora'
 import { log } from '../utils/logger.js'
 import { prepareSite } from '../generator/site-generator.js'
-import { writeComponentFiles, writeExampleManifest } from '../generator/component-writer.js'
-import type { ResolvedRegistryData } from './init.js'
+import { writeBlockFiles } from '../generator/block-writer.js'
 
-export async function build(options: { cwd?: string } = {}) {
+export async function landingBuild(options: { cwd?: string } = {}) {
   const cwd = options.cwd || process.cwd()
 
   const { siteDir } = await prepareSite({
     cwd,
-    templateName: 'template',
-    siteDirName: 'site',
-    writeFiles: async (siteDir, data) => {
-      const shadcnComponents = new Map(Object.entries(data.shadcnDeps || {}))
-      await writeComponentFiles(siteDir, data, shadcnComponents)
-      await writeExampleManifest(siteDir, data)
-    },
+    templateName: 'landing-template',
+    siteDirName: 'landing',
+    writeFiles: writeBlockFiles,
   })
 
   // Build the site
-  const buildSpinner = ora('Building site (this may take a moment)...').start()
+  const buildSpinner = ora('Building landing page (this may take a moment)...').start()
   try {
     execSync('pnpm build', { cwd: siteDir, stdio: 'pipe' })
-    buildSpinner.succeed('Site built successfully')
+    buildSpinner.succeed('Landing page built successfully')
   } catch (e) {
     buildSpinner.fail('Build failed')
     if (e instanceof Error && 'stdout' in e) {
@@ -39,14 +34,14 @@ export async function build(options: { cwd?: string } = {}) {
   }
 
   // Copy output
-  const outputDir = resolve(cwd, 'out')
+  const outputDir = resolve(cwd, 'out-landing')
   const nextOutDir = resolve(siteDir, 'out')
   if (existsSync(nextOutDir)) {
     await cp(nextOutDir, outputDir, { recursive: true })
-    log.success(`Static site generated at ./out`)
+    log.success(`Landing page generated at ./out-landing`)
   }
 
   console.log()
-  log.info('Deploy the ./out directory to any static host:')
+  log.info('Deploy the ./out-landing directory to any static host:')
   log.dim('  Vercel, Netlify, GitHub Pages, Cloudflare Pages, etc.')
 }
