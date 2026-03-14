@@ -27,11 +27,17 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Set version from tag
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          cd packages/cli
+          npm version "$VERSION" --no-git-tag-version
+
       - name: Build CLI
         run: pnpm --filter @aggmoulik/shadocs build
 
       - name: Publish to npm
-        run: pnpm --filter @aggmoulik/shadocs publish --no-git-checks
+        run: cd packages/cli && npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
