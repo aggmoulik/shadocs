@@ -1,12 +1,16 @@
-import { existsSync } from 'node:fs'
+import { existsSync, createWriteStream } from 'node:fs'
 import { readFile, cp, writeFile, mkdir, rm } from 'node:fs/promises'
-import { resolve, dirname } from 'node:path'
+import { resolve, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
+import { pipeline } from 'node:stream/promises'
 import ora from 'ora'
 import { log } from '../utils/logger.js'
 import type { ResolvedRegistryData } from '../commands/init.js'
 import { collectNpmDependencies } from './component-writer.js'
+
+const REPO = 'aggmoulik/shadocs'
+const BRANCH = 'main'
 
 export interface SiteGeneratorOptions {
   cwd: string
@@ -18,6 +22,61 @@ export interface SiteGeneratorOptions {
   writeFiles: (siteDir: string, data: ResolvedRegistryData) => Promise<void>
   /** Additional npm deps to install (collected by the caller) */
   extraDeps?: string[]
+}
+
+/**
+ * Find template locally (monorepo dev) or download from GitHub.
+ */
+async function resolveTemplate(
+  templateName: string,
+  cacheDir: string,
+  spinner: ReturnType<typeof ora>,
+): Promise<string> {
+  // Check local monorepo paths first (for development)
+  const cliRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+  const localPaths = [
+    resolve(cliRoot, `../${templateName}`),
+    resolve(cliRoot, `../../${templateName}`),
+    resolve(cliRoot, `../../packages/${templateName}`),
+  ]
+  const localDir = localPaths.find((p) => existsSync(join(p, 'package.json')))
+  if (localDir) return localDir
+
+  // Download from GitHub
+  const cachedDir = resolve(cacheDir, templateName)
+  if (existsSync(join(cachedDir, 'package.json'))) {
+    return cachedDir
+  }
+
+  spinner.text = `Downloading ${templateName} from GitHub...`
+
+  const tarUrl = `https://codeload.github.com/${REPO}/tar.gz/${BRANCH}`
+  const tarPath = resolve(cacheDir, `${templateName}.tar.gz`)
+  await mkdir(cacheDir, { recursive: true })
+
+  // Download tarball
+  const res = await fetch(tarUrl)
+  if (!res.ok || !res.body) {
+    throw new Error(`Failed to download template: ${res.status} ${res.statusText}`)
+  }
+  const fileStream = createWriteStream(tarPath)
+  await pipeline(res.body as unknown as NodeJS.ReadableStream, fileStream)
+
+  // Extract only the template subdirectory
+  await mkdir(cachedDir, { recursive: true })
+  execSync(
+    `tar -xzf "${tarPath}" --strip-components=3 -C "${cachedDir}" "shadocs-${BRANCH}/packages/${templateName}"`,
+    { stdio: 'pipe' },
+  )
+
+  // Clean up tarball
+  await rm(tarPath, { force: true })
+
+  if (!existsSync(join(cachedDir, 'package.json'))) {
+    throw new Error(`Template "${templateName}" not found in downloaded archive`)
+  }
+
+  return cachedDir
 }
 
 /**
@@ -45,22 +104,20 @@ export async function prepareSite(options: SiteGeneratorOptions): Promise<{
   const buildDir = resolve(cwd, '.shadocs')
   await mkdir(buildDir, { recursive: true })
 
-  // 3. Copy template
-  const templateSpinner = ora('Copying site template...').start()
-  const possibleTemplatePaths = [
-    resolve(dirname(fileURLToPath(import.meta.url)), `../../${templateName}`),
-    resolve(dirname(fileURLToPath(import.meta.url)), `../../../${templateName}`),
-    resolve(dirname(fileURLToPath(import.meta.url)), `../../packages/${templateName}`),
-  ]
-  const templateDir = possibleTemplatePaths.find((p) => existsSync(p)) || possibleTemplatePaths[0]
-
-  if (!existsSync(templateDir)) {
-    templateSpinner.fail(`Site template "${templateName}" not found. This is a bug — please report it.`)
+  // 3. Resolve template (local or download from GitHub)
+  const templateSpinner = ora('Resolving site template...').start()
+  let templateDir: string
+  try {
+    templateDir = await resolveTemplate(templateName, resolve(buildDir, '.templates'), templateSpinner)
+    templateSpinner.succeed('Resolved site template')
+  } catch (err) {
+    templateSpinner.fail(`Failed to resolve template "${templateName}": ${err instanceof Error ? err.message : err}`)
     process.exit(1)
   }
 
+  // 4. Copy template to site directory
+  const copySpinner = ora('Copying site template...').start()
   const siteDir = resolve(buildDir, siteDirName)
-  // Clean previous site dir to avoid stale files and symlink copy issues
   if (existsSync(siteDir)) {
     await rm(siteDir, { recursive: true, force: true })
   }
@@ -68,29 +125,49 @@ export async function prepareSite(options: SiteGeneratorOptions): Promise<{
     recursive: true,
     filter: (src) => {
       const rel = src.slice(templateDir.length)
-      return !rel.includes('node_modules') && !rel.includes('.next')
+      return !rel.includes('node_modules') && !rel.includes('.next') && !rel.includes('.turbo')
     },
   })
-  templateSpinner.succeed('Copied site template')
+  // Remove monorepo lockfile so pnpm generates a fresh standalone one
+  const lockfile = resolve(siteDir, 'pnpm-lock.yaml')
+  if (existsSync(lockfile)) {
+    await rm(lockfile, { force: true })
+  }
+  copySpinner.succeed('Copied site template')
 
-  // 4. Inject registry data
+  // 5. Inject registry data
   const injectSpinner = ora('Injecting registry data...').start()
   const registryDataPath = resolve(siteDir, 'src/lib/registry-data.json')
   await mkdir(dirname(registryDataPath), { recursive: true })
   await writeFile(registryDataPath, JSON.stringify(data, null, 2))
   injectSpinner.succeed('Injected registry data')
 
-  // 5. Write component/block files
+  // 6. Write component/block files
   const writeSpinner = ora('Writing component files...').start()
   await writeFiles(siteDir, data)
   writeSpinner.succeed('Wrote component files')
 
-  // 6. Install dependencies
+  // 7. Install dependencies
   const installSpinner = ora('Installing dependencies...').start()
   try {
+    // Read template's existing deps to avoid overwriting them
+    const sitePkg = JSON.parse(await readFile(resolve(siteDir, 'package.json'), 'utf-8'))
+    const existingDeps = new Set([
+      ...Object.keys(sitePkg.dependencies || {}),
+      ...Object.keys(sitePkg.devDependencies || {}),
+    ])
+
     const { dependencies } = collectNpmDependencies(data)
     const allDeps = [...new Set([...dependencies, ...extraDeps])]
+      .filter((dep) => !existingDeps.has(dep))
 
+    // Install template deps first
+    execSync('pnpm install', {
+      cwd: siteDir,
+      stdio: 'pipe',
+    })
+
+    // Then add extra component deps (only ones not already in the template)
     if (allDeps.length > 0) {
       execSync(`pnpm add ${allDeps.join(' ')}`, {
         cwd: siteDir,
@@ -98,13 +175,10 @@ export async function prepareSite(options: SiteGeneratorOptions): Promise<{
       })
     }
 
-    execSync('pnpm install --frozen-lockfile 2>/dev/null || pnpm install', {
-      cwd: siteDir,
-      stdio: 'pipe',
-    })
     installSpinner.succeed('Dependencies installed')
-  } catch {
-    installSpinner.fail('Failed to install dependencies')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    installSpinner.fail(`Failed to install dependencies: ${msg}`)
     process.exit(1)
   }
 
