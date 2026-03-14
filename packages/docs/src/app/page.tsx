@@ -4,13 +4,13 @@ import { CodeBlock } from '@/components/code-block'
 
 export default async function HomePage() {
   const quickStartCode = `# Initialize from your registry
-npx shadocs init https://your-registry.com/r/registry.json
+npx @aggmoulik/shadocs init https://your-registry.com/r/registry.json
 
 # Start the docs site
-npx shadocs docs dev
+npx @aggmoulik/shadocs docs dev
 
 # Start the landing page
-npx shadocs landing dev`
+npx @aggmoulik/shadocs landing dev`
 
   const quickStartHtml = await highlight(quickStartCode, 'bash')
 

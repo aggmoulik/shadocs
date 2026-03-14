@@ -17,7 +17,8 @@
     "cli"
   ],
   "bin": {
-    "shadocs": "./dist/bin/shadocs.js"
+    "shadocs": "./dist/shadocs.js",
+    "@aggmoulik/shadocs": "./dist/shadocs.js"
   },
   "scripts": {
     "build": "tsup",

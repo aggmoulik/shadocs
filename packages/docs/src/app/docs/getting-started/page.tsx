@@ -8,11 +8,11 @@ export const metadata: Metadata = {
 }
 
 export default async function GettingStartedPage() {
-  const initCode = `npx shadocs init https://your-registry.com/r/registry.json`
-  const docsDevCode = `npx shadocs docs dev`
-  const docsBuildCode = `npx shadocs docs build`
-  const landingDevCode = `npx shadocs landing dev`
-  const landingBuildCode = `npx shadocs landing build`
+  const initCode = `npx @aggmoulik/shadocs init https://your-registry.com/r/registry.json`
+  const docsDevCode = `npx @aggmoulik/shadocs docs dev`
+  const docsBuildCode = `npx @aggmoulik/shadocs docs build`
+  const landingDevCode = `npx @aggmoulik/shadocs landing dev`
+  const landingBuildCode = `npx @aggmoulik/shadocs landing build`
   const gitignoreCode = `.shadocs/
 out/
 out-landing/`

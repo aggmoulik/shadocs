@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 }
 
 export default async function InstallationPage() {
-  const npxCode = `npx shadocs init https://your-registry.com/r/registry.json`
+  const npxCode = `npx @aggmoulik/shadocs init https://your-registry.com/r/registry.json`
   const globalInstallCode = `# Install globally
 npm install -g shadocs
 
