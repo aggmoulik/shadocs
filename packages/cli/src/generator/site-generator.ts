@@ -33,7 +33,7 @@ export async function prepareSite(options: SiteGeneratorOptions): Promise<{
   // 1. Check shadocs.json exists
   const dataPath = resolve(cwd, 'shadocs.json')
   if (!existsSync(dataPath)) {
-    log.error('shadocs.json not found. Run `shadocs init <source>` first.')
+    log.error('shadocs.json not found. Run `npx @aggmoulik/shadocs init <source>` first.')
     process.exit(1)
   }
 

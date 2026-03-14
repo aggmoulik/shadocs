@@ -7,45 +7,53 @@ export const metadata: Metadata = {
 }
 
 export default async function CLIReferencePage() {
-  const initCode = `shadocs init <source>
+  const installNote = `# Using npx (no install needed)
+npx @aggmoulik/shadocs <command>
+
+# Or install globally, then use "shadocs" directly
+npm install -g @aggmoulik/shadocs
+shadocs <command>`
+
+  const initCode = `npx @aggmoulik/shadocs init <source>
 
 # Examples
-shadocs init https://ui.shadcn.com/r/registry.json
-shadocs init ./path/to/local/registry.json
-shadocs init https://your-site.com/r/registry.json`
+npx @aggmoulik/shadocs init https://ui.shadcn.com/r/registry.json
+npx @aggmoulik/shadocs init ./path/to/local/registry.json
+npx @aggmoulik/shadocs init https://your-site.com/r/registry.json`
 
-  const docsDevCode = `shadocs docs dev [options]
+  const docsDevCode = `npx @aggmoulik/shadocs docs dev [options]
 
 # Options
 #   -p, --port <port>  Port number (default: 3000)
 
 # Examples
-shadocs docs dev
-shadocs docs dev --port 4000`
+npx @aggmoulik/shadocs docs dev
+npx @aggmoulik/shadocs docs dev --port 4000`
 
-  const docsBuildCode = `shadocs docs build
+  const docsBuildCode = `npx @aggmoulik/shadocs docs build
 
 # Outputs static site to ./out`
 
-  const landingDevCode = `shadocs landing dev [options]
+  const landingDevCode = `npx @aggmoulik/shadocs landing dev [options]
 
 # Options
 #   -p, --port <port>  Port number (default: 3001)
 
 # Examples
-shadocs landing dev
-shadocs landing dev --port 4001`
+npx @aggmoulik/shadocs landing dev
+npx @aggmoulik/shadocs landing dev --port 4001`
 
-  const landingBuildCode = `shadocs landing build
+  const landingBuildCode = `npx @aggmoulik/shadocs landing build
 
 # Outputs static site to ./out-landing`
 
   const aliasCode = `# These are equivalent:
-shadocs dev        # → shadocs docs dev
-shadocs build      # → shadocs docs build`
+npx @aggmoulik/shadocs dev        # → docs dev
+npx @aggmoulik/shadocs build      # → docs build`
 
-  const [initHtml, docsDevHtml, docsBuildHtml, landingDevHtml, landingBuildHtml, aliasHtml] =
+  const [installNoteHtml, initHtml, docsDevHtml, docsBuildHtml, landingDevHtml, landingBuildHtml, aliasHtml] =
     await Promise.all([
+      highlight(installNote, 'bash'),
       highlight(initCode, 'bash'),
       highlight(docsDevCode, 'bash'),
       highlight(docsBuildCode, 'bash'),
@@ -62,6 +70,15 @@ shadocs build      # → shadocs docs build`
           All available commands and their options.
         </p>
       </div>
+
+      {/* Usage */}
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">Usage</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Run commands with <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">npx @aggmoulik/shadocs</code>, or install globally to use <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">shadocs</code> directly.
+        </p>
+        <CodeBlock html={installNoteHtml} raw={installNote} />
+      </section>
 
       {/* init */}
       <section className="space-y-3">

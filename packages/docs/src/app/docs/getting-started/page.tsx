@@ -138,6 +138,14 @@ export default config`
         </p>
       </section>
 
+      {/* Tip */}
+      <section className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+        <h3 className="text-sm font-semibold">Tip: Install globally for shorter commands</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Run <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">npm install -g @aggmoulik/shadocs</code> to use <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">shadocs</code> directly instead of <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">npx @aggmoulik/shadocs</code>.
+        </p>
+      </section>
+
       {/* Gitignore */}
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Add to .gitignore</h2>

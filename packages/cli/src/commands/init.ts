@@ -106,10 +106,13 @@ export async function init(source: string, options: { cwd?: string } = {}) {
 
   console.log()
   log.info('Next steps:')
-  log.dim('  shadocs docs dev       — Start docs dev server')
-  log.dim('  shadocs docs build     — Build docs static site')
+  log.dim('  npx @aggmoulik/shadocs docs dev       — Start docs dev server')
+  log.dim('  npx @aggmoulik/shadocs docs build     — Build docs static site')
   if (typeGroups.has('block')) {
-    log.dim('  shadocs landing dev    — Start blocks showcase dev server')
-    log.dim('  shadocs landing build  — Build blocks showcase static site')
+    log.dim('  npx @aggmoulik/shadocs landing dev    — Start blocks showcase dev server')
+    log.dim('  npx @aggmoulik/shadocs landing build  — Build blocks showcase static site')
   }
+  console.log()
+  log.dim('  Tip: Install globally to use "shadocs" directly:')
+  log.dim('  npm install -g @aggmoulik/shadocs')
 }

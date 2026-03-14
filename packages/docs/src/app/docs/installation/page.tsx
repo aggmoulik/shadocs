@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default async function InstallationPage() {
   const npxCode = `npx @aggmoulik/shadocs init https://your-registry.com/r/registry.json`
   const globalInstallCode = `# Install globally
-npm install -g shadocs
+npm install -g @aggmoulik/shadocs
 
 # Then use directly
 shadocs init https://your-registry.com/r/registry.json`
@@ -39,7 +39,7 @@ shadocs init https://your-registry.com/r/registry.json`
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">Global install</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          If you prefer having shadocs available as a global command:
+          If you prefer having shadocs available as a global command, install it globally. Then you can use <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">shadocs</code> directly without <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">npx</code>.
         </p>
         <CodeBlock html={globalHtml} raw={globalInstallCode} />
       </section>
