@@ -1,5 +1,8 @@
 import { z } from 'zod'
 
+export const siteTypeSchema = z.enum(['docs', 'landing'])
+export type SiteType = z.infer<typeof siteTypeSchema>
+
 export const shadocsConfigSchema = z.object({
   /** Registry source URL or local path (set by init) */
   registry: z.object({
@@ -8,6 +11,17 @@ export const shadocsConfigSchema = z.object({
     description: z.string().optional(),
     homepage: z.string().optional(),
   }),
+
+  /** Which sites were scaffolded */
+  sites: z.array(siteTypeSchema).default(['docs']),
+
+  /** Custom template sources (git URL or local path) */
+  templates: z
+    .object({
+      docs: z.string().optional(),
+      landing: z.string().optional(),
+    })
+    .optional(),
 
   /** Site customization */
   site: z
@@ -51,7 +65,8 @@ export const shadocsConfigSchema = z.object({
   /** Output configuration */
   output: z
     .object({
-      dir: z.string().optional(),
+      docs: z.string().optional(),
+      landing: z.string().optional(),
     })
     .optional(),
 })

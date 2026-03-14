@@ -7,15 +7,24 @@ export const metadata: Metadata = {
 }
 
 export default async function ConfigurationPage() {
-  const fullConfigCode = `import type { ShadocsConfig } from 'shadocs'
+  const fullConfigCode = `import { defineConfig } from 'shadocs'
 
-const config: ShadocsConfig = {
+export default defineConfig({
   // Required: registry source and metadata
   registry: {
     source: 'https://your-site.com/r/registry.json',
     name: 'My Components',
     description: 'A collection of beautiful components',
     homepage: 'https://your-site.com',
+  },
+
+  // Which sites were scaffolded
+  sites: ['docs', 'landing'],
+
+  // Optional: custom template sources
+  templates: {
+    docs: 'https://github.com/user/my-docs-template.git',
+    landing: 'https://github.com/user/my-landing-template.git',
   },
 
   // Optional: site metadata
@@ -39,11 +48,12 @@ const config: ShadocsConfig = {
     ],
   },
 
-  // Optional: output directory
+  // Optional: output directories
   output: {
-    dir: './out',
+    docs: './out',
+    landing: './out-landing',
   },
-}`
+})`
 
   const registryCode = `registry: {
   // URL or local file path to your registry.json
@@ -57,6 +67,15 @@ const config: ShadocsConfig = {
 
   // Optional homepage URL — used for install commands
   homepage: 'https://your-site.com',
+}`
+
+  const sitesCode = `// Which site types to scaffold during init
+sites: ['docs', 'landing']`
+
+  const templatesCode = `// Custom template sources (git URL or local path)
+templates: {
+  docs: 'https://github.com/user/my-docs-template.git',
+  landing: '/path/to/local/template',
 }`
 
   const siteCode = `site: {
@@ -73,9 +92,11 @@ const config: ShadocsConfig = {
   ogImage: '/og.png',
 }`
 
-  const [fullHtml, registryHtml, siteHtml] = await Promise.all([
+  const [fullHtml, registryHtml, sitesHtml, templatesHtml, siteHtml] = await Promise.all([
     highlight(fullConfigCode, 'typescript'),
     highlight(registryCode, 'typescript'),
+    highlight(sitesCode, 'typescript'),
+    highlight(templatesCode, 'typescript'),
     highlight(siteCode, 'typescript'),
   ])
 
@@ -142,6 +163,46 @@ const config: ShadocsConfig = {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">
+          <code className="font-mono text-lg">sites</code>
+        </h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          An array specifying which site types were scaffolded during init. This is set automatically based on your selection.
+        </p>
+        <CodeBlock html={sitesHtml} raw={sitesCode} />
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border">
+                <th className="text-left py-2 pr-4 font-medium">Value</th>
+                <th className="text-left py-2 font-medium">Description</th>
+              </tr>
+            </thead>
+            <tbody className="text-muted-foreground">
+              <tr className="border-b border-border">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">{`'docs'`}</td>
+                <td className="py-2">Documentation site with component previews and code</td>
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">{`'landing'`}</td>
+                <td className="py-2">Landing page with block showcase and theme editor</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-semibold">
+          <code className="font-mono text-lg">templates</code>
+        </h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Optional custom template sources. Provide a git URL or local path for each site type. If omitted, the built-in shadocs templates are used.
+        </p>
+        <CodeBlock html={templatesHtml} raw={templatesCode} />
       </section>
 
       <section className="space-y-3">
@@ -246,7 +307,7 @@ const config: ShadocsConfig = {
           <code className="font-mono text-lg">output</code>
         </h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Configure where the built site is output.
+          Configure where the built sites are output.
         </p>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -260,10 +321,16 @@ const config: ShadocsConfig = {
             </thead>
             <tbody className="text-muted-foreground">
               <tr className="border-b border-border">
-                <td className="py-2 pr-4 font-mono text-xs text-foreground">dir</td>
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">docs</td>
                 <td className="py-2 pr-4 font-mono text-xs">string</td>
                 <td className="py-2 pr-4 font-mono text-xs">./out</td>
-                <td className="py-2">Output directory for static build</td>
+                <td className="py-2">Output directory for docs build</td>
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">landing</td>
+                <td className="py-2 pr-4 font-mono text-xs">string</td>
+                <td className="py-2 pr-4 font-mono text-xs">./out-landing</td>
+                <td className="py-2">Output directory for landing build</td>
               </tr>
             </tbody>
           </table>

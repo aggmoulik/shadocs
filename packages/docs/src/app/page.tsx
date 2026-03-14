@@ -3,14 +3,17 @@ import { highlight } from '@/lib/highlight'
 import { CodeBlock } from '@/components/code-block'
 
 export default async function HomePage() {
-  const quickStartCode = `# Initialize from your registry
+  const quickStartCode = `# Initialize from your registry (interactive prompts)
 npx @aggmoulik/shadocs init https://your-registry.com/r/registry.json
 
 # Start the docs site
 npx @aggmoulik/shadocs docs dev
 
 # Start the landing page
-npx @aggmoulik/shadocs landing dev`
+npx @aggmoulik/shadocs landing dev
+
+# Update registry data without re-scaffolding
+npx @aggmoulik/shadocs sync`
 
   const quickStartHtml = await highlight(quickStartCode, 'bash')
 
@@ -32,7 +35,7 @@ npx @aggmoulik/shadocs landing dev`
               </span>
             </h1>
             <p className="text-lg text-muted-foreground mt-4 max-w-2xl leading-relaxed">
-              Generate documentation sites and landing pages from any shadcn/ui-compatible component registry. One command to init, one to preview, one to build.
+              Generate documentation sites and landing pages from any shadcn/ui-compatible component registry. You own the code — customize everything.
             </p>
             <div className="flex flex-wrap items-center gap-3 mt-8">
               <Link
@@ -67,16 +70,24 @@ npx @aggmoulik/shadocs landing dev`
           <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-8">Features</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <FeatureCard
-              title="Registry-first"
-              description="Works with any shadcn/ui-compatible registry. Point it at your registry.json and get a full docs site."
+              title="You own the code"
+              description="Templates are scaffolded into your project as full Next.js apps. Customize layouts, add pages, modify styles — it's your code."
             />
             <FeatureCard
               title="Two site types"
-              description="Generate a component documentation site with code examples, or a blocks landing page with live previews."
+              description="Generate a component documentation site with code examples, or a blocks landing page with live previews and a theme editor."
             />
             <FeatureCard
-              title="Zero config"
-              description="Run shadocs init with your registry URL. Everything is auto-configured from your registry metadata."
+              title="Interactive init"
+              description="Choose which sites to generate, provide custom template URLs, or use the built-in defaults. Skip prompts with --yes."
+            />
+            <FeatureCard
+              title="Custom templates"
+              description="Use any git repo as a template with --template flag. Build and share your own template designs with the community."
+            />
+            <FeatureCard
+              title="Registry sync"
+              description="Update component data without touching your customized templates. Run shadocs sync to pull the latest from your registry."
             />
             <FeatureCard
               title="Static export"
@@ -89,6 +100,10 @@ npx @aggmoulik/shadocs landing dev`
             <FeatureCard
               title="Theme editor"
               description="Landing pages include a built-in theme editor with presets, color pickers, typography controls, and CSS export."
+            />
+            <FeatureCard
+              title="Zero config"
+              description="Run shadocs init with your registry URL. Everything is auto-configured from your registry metadata."
             />
           </div>
         </div>

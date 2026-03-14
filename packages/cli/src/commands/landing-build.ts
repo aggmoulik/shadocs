@@ -4,20 +4,16 @@ import { resolve } from 'node:path'
 import { execSync } from 'node:child_process'
 import ora from 'ora'
 import { log } from '../utils/logger.js'
-import { prepareSite } from '../generator/site-generator.js'
-import { writeBlockFiles } from '../generator/block-writer.js'
 
 export async function landingBuild(options: { cwd?: string } = {}) {
   const cwd = options.cwd || process.cwd()
+  const siteDir = resolve(cwd, 'landing')
 
-  const { siteDir } = await prepareSite({
-    cwd,
-    templateName: 'landing-template',
-    siteDirName: 'landing',
-    writeFiles: writeBlockFiles,
-  })
+  if (!existsSync(siteDir)) {
+    log.error('No landing/ directory found. Run `npx @aggmoulik/shadocs init <source>` first and select "Landing page".')
+    process.exit(1)
+  }
 
-  // Build the site
   const buildSpinner = ora('Building landing page (this may take a moment)...').start()
   try {
     execSync('pnpm build', { cwd: siteDir, stdio: 'pipe' })

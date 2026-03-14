@@ -4,6 +4,7 @@ import { build } from '../src/commands/build.js'
 import { dev } from '../src/commands/dev.js'
 import { landingBuild } from '../src/commands/landing-build.js'
 import { landingDev } from '../src/commands/landing-dev.js'
+import { sync } from '../src/commands/sync.js'
 
 const program = new Command()
 
@@ -12,19 +13,29 @@ program
   .description('Generate documentation sites and landing pages from shadcn component registries')
   .version('0.1.0')
 
-// Init command (shared)
+// Init command
 program
   .command('init')
   .description('Initialize from a shadcn-compatible registry')
   .argument('<source>', 'URL to registry.json or local path')
-  .action(async (source: string) => {
-    await init(source)
+  .option('-t, --template <url>', 'Custom template (git URL or local path)')
+  .option('-y, --yes', 'Skip prompts and use defaults')
+  .action(async (source: string, options: { template?: string; yes?: boolean }) => {
+    await init(source, { template: options.template, yes: options.yes })
+  })
+
+// Sync command
+program
+  .command('sync')
+  .description('Re-fetch registry and update site data without re-scaffolding templates')
+  .action(async () => {
+    await sync()
   })
 
 // --- Docs commands ---
 const docs = program
   .command('docs')
-  .description('Generate component documentation site')
+  .description('Component documentation site')
 
 docs
   .command('dev')
@@ -44,7 +55,7 @@ docs
 // --- Landing commands ---
 const landing = program
   .command('landing')
-  .description('Generate blocks showcase landing page')
+  .description('Blocks showcase landing page')
 
 landing
   .command('dev')

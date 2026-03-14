@@ -50,20 +50,23 @@ shadocs init https://your-registry.com/r/registry.json`
           <li><strong className="text-foreground">Node.js 18+</strong> — required for the CLI and Next.js build</li>
           <li><strong className="text-foreground">pnpm</strong> — used for dependency installation in the generated site</li>
           <li><strong className="text-foreground">A shadcn/ui-compatible registry</strong> — your registry.json URL or local path</li>
+          <li><strong className="text-foreground">git</strong> — required if using custom templates from git URLs</li>
         </ul>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-xl font-semibold">What gets created</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          When you run <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">shadocs init</code>, two files are created in your project root:
+          When you run <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">shadocs init</code>, the following are created in your project:
         </p>
         <ul className="text-sm text-muted-foreground space-y-1.5 list-disc list-inside leading-relaxed">
           <li><code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">shadocs.json</code> — resolved registry data with all component source code</li>
           <li><code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">shadocs.config.ts</code> — site configuration (name, theme, navigation)</li>
+          <li><code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">docs/</code> — your documentation site (a full Next.js app you own)</li>
+          <li><code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">landing/</code> — your landing page (if selected during init)</li>
         </ul>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          When you run dev or build, a <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">.shadocs/</code> directory is created with the generated Next.js site. This directory should be added to your <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">.gitignore</code>.
+          The <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">docs/</code> and <code className="text-xs px-1.5 py-0.5 rounded bg-muted font-mono">landing/</code> directories are <strong>yours to own and customize</strong>. Unlike tools that hide generated code, shadocs scaffolds it directly into your project so you have full control.
         </p>
       </section>
     </article>

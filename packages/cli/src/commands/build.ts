@@ -4,29 +4,20 @@ import { resolve } from 'node:path'
 import { execSync } from 'node:child_process'
 import ora from 'ora'
 import { log } from '../utils/logger.js'
-import { prepareSite } from '../generator/site-generator.js'
-import { writeComponentFiles, writeExampleManifest } from '../generator/component-writer.js'
-import type { ResolvedRegistryData } from './init.js'
 
 export async function build(options: { cwd?: string } = {}) {
   const cwd = options.cwd || process.cwd()
+  const siteDir = resolve(cwd, 'docs')
 
-  const { siteDir } = await prepareSite({
-    cwd,
-    templateName: 'template',
-    siteDirName: 'site',
-    writeFiles: async (siteDir, data) => {
-      const shadcnComponents = new Map(Object.entries(data.shadcnDeps || {}))
-      await writeComponentFiles(siteDir, data, shadcnComponents)
-      await writeExampleManifest(siteDir, data)
-    },
-  })
+  if (!existsSync(siteDir)) {
+    log.error('No docs/ directory found. Run `npx @aggmoulik/shadocs init <source>` first.')
+    process.exit(1)
+  }
 
-  // Build the site
-  const buildSpinner = ora('Building site (this may take a moment)...').start()
+  const buildSpinner = ora('Building docs site (this may take a moment)...').start()
   try {
     execSync('pnpm build', { cwd: siteDir, stdio: 'pipe' })
-    buildSpinner.succeed('Site built successfully')
+    buildSpinner.succeed('Docs site built successfully')
   } catch (e) {
     buildSpinner.fail('Build failed')
     if (e instanceof Error && 'stdout' in e) {

@@ -1,16 +1,24 @@
-import type { ShadocsConfig } from './schema.js'
+import type { ShadocsConfig, SiteType } from './schema.js'
 
-export function createDefaultConfig(
-  source: string,
-  registryName: string,
+export interface CreateConfigOptions {
+  source: string
+  registryName: string
   homepage?: string
-): ShadocsConfig {
+  sites: SiteType[]
+  templates?: { docs?: string; landing?: string }
+}
+
+export function createDefaultConfig(options: CreateConfigOptions): ShadocsConfig {
+  const { source, registryName, homepage, sites, templates } = options
+
   return {
     registry: {
       source,
       name: registryName,
       homepage,
     },
+    sites,
+    ...(templates && { templates }),
     site: {
       title: `${registryName} Docs`,
     },
@@ -18,7 +26,8 @@ export function createDefaultConfig(
       links: homepage ? [{ title: 'Homepage', href: homepage }] : [],
     },
     output: {
-      dir: './out',
+      docs: './out',
+      landing: './out-landing',
     },
   }
 }

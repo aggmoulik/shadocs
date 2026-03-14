@@ -19,6 +19,7 @@ export const navigation: NavItem[] = [
     items: [
       { title: 'CLI Reference', href: '/docs/cli-reference' },
       { title: 'Configuration', href: '/docs/configuration' },
+      { title: 'Custom Templates', href: '/docs/custom-templates' },
       { title: 'Registry Format', href: '/docs/registry-format' },
     ],
   },

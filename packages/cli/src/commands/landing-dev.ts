@@ -1,21 +1,18 @@
+import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { spawn } from 'node:child_process'
 import { log } from '../utils/logger.js'
-import { prepareSite } from '../generator/site-generator.js'
-import { writeBlockFiles } from '../generator/block-writer.js'
 
 export async function landingDev(options: { cwd?: string; port?: number } = {}) {
   const cwd = options.cwd || process.cwd()
   const port = options.port || 3001
+  const siteDir = resolve(cwd, 'landing')
 
-  const { siteDir } = await prepareSite({
-    cwd,
-    templateName: 'landing-template',
-    siteDirName: 'landing',
-    writeFiles: writeBlockFiles,
-  })
+  if (!existsSync(siteDir)) {
+    log.error('No landing/ directory found. Run `npx @aggmoulik/shadocs init <source>` first and select "Landing page".')
+    process.exit(1)
+  }
 
-  // Start Next.js dev server
-  console.log()
   log.info(`Starting landing page dev server on http://localhost:${port}`)
   console.log()
 
