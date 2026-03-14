@@ -1,14 +1,28 @@
 {
-  "name": "shadocs",
+  "name": "@aggmoulik/shadocs",
   "version": "0.1.0",
   "description": "Generate beautiful documentation sites from shadcn component registries",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aggmoulik/shadocs"
+  },
+  "keywords": [
+    "shadcn",
+    "docs",
+    "documentation",
+    "registry",
+    "components",
+    "cli"
+  ],
   "bin": {
     "shadocs": "./dist/bin/shadocs.js"
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
     "commander": "^13.1.0",
@@ -23,5 +37,8 @@
   },
   "files": [
     "dist"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
